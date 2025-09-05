@@ -1,70 +1,115 @@
-// src/App.jsx
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import axios from "axios";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import { sampleTransactions } from "./data/sampleData";
-import { ThemeContext } from "./context/ThemeContext";
+import StatCard from "./components/StatCard";
+import ExpenseChart from "./components/ExpenseChart";
+import CategoryPieChart from "./components/CategoryPieChart";
+import TransactionTable from "./components/TransactionTable";
+import AddTransactionForm from "./components/AddTransactionForm";
+import { FaArrowUp, FaArrowDown, FaWallet } from "react-icons/fa";
 
-// Pages
-import Dashboard from "./pages/Dashboard";
-import Reports from "./pages/Reports";
+function App() {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-export default function App() {
-  const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem("transactions");
-    return saved ? JSON.parse(saved) : sampleTransactions;
-  });
-
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem("theme");
-    return saved || "light";
-  });
-
+  // ✅ Fetch transactions from backend
   useEffect(() => {
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-  }, [transactions]);
+    axios
+      .get("http://localhost:5000/api/transactions")
+      .then((res) => {
+        setTransactions(res.data);
+        setLoading(false);
+      })
+      .catch((err) => console.error("❌ Error fetching:", err));
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("theme", theme);
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+  // ✅ Add transaction
+  const addTransaction = async (newTx) => {
+    try {
+      const res = await axios.post("http://localhost:5000/api/transactions", newTx);
+      setTransactions([...transactions, res.data]);
+    } catch (err) {
+      console.error("❌ Error adding:", err);
     }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
   };
 
+  // ✅ Delete transaction
+  const deleteTransaction = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/transactions/${id}`);
+      setTransactions(transactions.filter((t) => t._id !== id));
+    } catch (err) {
+      console.error("❌ Error deleting:", err);
+    }
+  };
+
+  // ✅ Totals
+  const totalIncome = transactions
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = transactions
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const balance = totalIncome - totalExpenses;
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">⏳ Loading...</div>;
+  }
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-        <Sidebar />
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar />
 
-        <div className="flex-1 flex flex-col">
-          <Topbar />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        <Topbar />
+        <div className="p-6 overflow-y-auto">
+          <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
 
-          <main className="p-6 overflow-y-auto">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <Dashboard
-                    transactions={transactions}
-                    setTransactions={setTransactions}
-                  />
-                }
-              />
-              <Route
-                path="/reports"
-                element={<Reports transactions={transactions} />}
-              />
-            </Routes>
-          </main>
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatCard
+              title="Total Income"
+              value={`₹${totalIncome}`}
+              icon={<FaArrowUp />}
+              color="text-green-500"
+            />
+            <StatCard
+              title="Total Expenses"
+              value={`₹${totalExpenses}`}
+              icon={<FaArrowDown />}
+              color="text-red-500"
+            />
+            <StatCard
+              title="Balance"
+              value={`₹${balance}`}
+              icon={<FaWallet />}
+              color="text-blue-500"
+            />
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <ExpenseChart transactions={transactions} />
+            <CategoryPieChart transactions={transactions} />
+          </div>
+
+          {/* Transaction Table */}
+          <TransactionTable
+            transactions={transactions}
+            deleteTransaction={deleteTransaction}
+          />
+
+          {/* Add Transaction Form */}
+          <AddTransactionForm addTransaction={addTransaction} />
         </div>
       </div>
-    </ThemeContext.Provider>
+    </div>
   );
 }
+
+export default App;

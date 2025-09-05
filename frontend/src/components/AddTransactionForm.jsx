@@ -1,113 +1,78 @@
-// src/components/AddTransactionForm.jsx
 import { useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
 
-export default function AddTransactionForm({ setTransactions, transactions }) {
+export default function AddTransactionForm({ addTransaction }) {
   const [form, setForm] = useState({
     type: "expense",
     category: "",
     amount: "",
+    date: "",
     note: "",
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!form.category || !form.amount) {
-      toast.error("Please fill in all required fields.", {
-        style: {
-          background: "#ef4444",
-          color: "white",
-        },
-      });
-      return;
-    }
-
-    const newTx = {
-      id: Date.now(),
-      ...form,
-      amount: Number(form.amount),
-      date: new Date().toISOString().split("T")[0],
-    };
-    setTransactions([newTx, ...transactions]);
-
-    toast.success("Transaction added successfully!", {
-      style: {
-        background: "#22c55e",
-        color: "white",
-      },
-    });
-
-    setForm({ type: "expense", category: "", amount: "", note: "" });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const inputClasses =
-    "w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500";
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    addTransaction({ ...form, amount: Number(form.amount) });
+    setForm({ type: "expense", category: "", amount: "", date: "", note: "" });
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg h-full">
-      <Toaster position="top-right" />
-      <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">
-        Add New Transaction
-      </h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-            Type
-          </label>
-          <select
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-            className={inputClasses}
-          >
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
-        </div>
-        <div>
-          <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-            Category
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Food, Salary"
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className={inputClasses}
-            required
-          />
-        </div>
-        <div>
-          <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-            Amount
-          </label>
-          <input
-            type="number"
-            placeholder="Enter amount"
-            value={form.amount}
-            onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            className={inputClasses}
-            required
-          />
-        </div>
-        <div>
-          <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-            Note (Optional)
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Dinner with friends"
-            value={form.note}
-            onChange={(e) => setForm({ ...form, note: e.target.value })}
-            className={inputClasses}
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-colors"
+    <form onSubmit={handleSubmit} className="mt-6 p-4 bg-white rounded shadow">
+      <h3 className="text-xl font-bold mb-4">➕ Add Transaction</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <select
+          name="type"
+          value={form.type}
+          onChange={handleChange}
+          className="p-2 border rounded"
         >
-          Add Transaction
-        </button>
-      </form>
-    </div>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+        <input
+          type="text"
+          name="category"
+          value={form.category}
+          onChange={handleChange}
+          placeholder="Category"
+          className="p-2 border rounded"
+          required
+        />
+        <input
+          type="number"
+          name="amount"
+          value={form.amount}
+          onChange={handleChange}
+          placeholder="Amount"
+          className="p-2 border rounded"
+          required
+        />
+        <input
+          type="date"
+          name="date"
+          value={form.date}
+          onChange={handleChange}
+          className="p-2 border rounded"
+          required
+        />
+        <input
+          type="text"
+          name="note"
+          value={form.note}
+          onChange={handleChange}
+          placeholder="Note"
+          className="p-2 border rounded"
+        />
+      </div>
+      <button
+        type="submit"
+        className="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      >
+        Save Transaction
+      </button>
+    </form>
   );
 }
