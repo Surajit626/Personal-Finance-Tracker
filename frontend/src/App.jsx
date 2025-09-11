@@ -1,19 +1,29 @@
+// src/App.jsx
+
 import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
+
+// Import Components & Pages
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import StatCard from "./components/StatCard";
-import ExpenseChart from "./components/ExpenseChart";
-import CategoryPieChart from "./components/CategoryPieChart";
-import TransactionTable from "./components/TransactionTable";
-import AddTransactionForm from "./components/AddTransactionForm";
-import { FaArrowUp, FaArrowDown, FaWallet } from "react-icons/fa";
+import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
+import { ThemeContext } from "./context/ThemeContext";
 
 function App() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingTx, setEditingTx] = useState(null);
+  const [theme, setTheme] = useState("light");
 
-  // ✅ Fetch transactions from backend
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+  };
+
+  // Fetch transactions from backend
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/transactions")
@@ -21,94 +31,89 @@ function App() {
         setTransactions(res.data);
         setLoading(false);
       })
-      .catch((err) => console.error("❌ Error fetching:", err));
+      .catch((err) => {
+        console.error("❌ Error fetching:", err);
+        toast.error("Failed to fetch transactions.");
+      });
   }, []);
 
-  // ✅ Add transaction
+  // Add transaction
   const addTransaction = async (newTx) => {
     try {
       const res = await axios.post("http://localhost:5000/api/transactions", newTx);
       setTransactions([...transactions, res.data]);
+      toast.success("Transaction added successfully!");
     } catch (err) {
       console.error("❌ Error adding:", err);
+      toast.error("Failed to add transaction.");
     }
   };
 
-  // ✅ Delete transaction
+  // Update transaction
+  const updateTransaction = async (id, updatedData) => {
+    try {
+      const res = await axios.put(`http://localhost:5000/api/transactions/${id}`, updatedData);
+      setTransactions(transactions.map((t) => (t._id === id ? res.data : t)));
+      toast.success("Transaction updated successfully!");
+      setEditingTx(null);
+    } catch (err) {
+      console.error("❌ Error updating:", err);
+      toast.error("Failed to update transaction.");
+    }
+  };
+
+  // Delete transaction
   const deleteTransaction = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/api/transactions/${id}`);
       setTransactions(transactions.filter((t) => t._id !== id));
+      toast.success("Transaction deleted successfully!");
     } catch (err) {
       console.error("❌ Error deleting:", err);
+      toast.error("Failed to delete transaction.");
     }
   };
 
-  // ✅ Totals
-  const totalIncome = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalExpenses = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const balance = totalIncome - totalExpenses;
+  // Set transaction to be edited
+  const handleEdit = (tx) => {
+    setEditingTx(tx);
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">⏳ Loading...</div>;
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <Sidebar />
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      <div className={`${theme} flex h-screen bg-gray-100 dark:bg-gray-900`}>
+        <Toaster position="top-right" reverseOrder={false} />
+        <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <Topbar />
-        <div className="p-6 overflow-y-auto">
-          <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
-
-          {/* Stat Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Total Income"
-              value={`₹${totalIncome}`}
-              icon={<FaArrowUp />}
-              color="text-green-500"
-            />
-            <StatCard
-              title="Total Expenses"
-              value={`₹${totalExpenses}`}
-              icon={<FaArrowDown />}
-              color="text-red-500"
-            />
-            <StatCard
-              title="Balance"
-              value={`₹${balance}`}
-              icon={<FaWallet />}
-              color="text-blue-500"
-            />
-          </div>
-
-          {/* Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <ExpenseChart transactions={transactions} />
-            <CategoryPieChart transactions={transactions} />
-          </div>
-
-          {/* Transaction Table */}
-          <TransactionTable
-            transactions={transactions}
-            deleteTransaction={deleteTransaction}
-          />
-
-          {/* Add Transaction Form */}
-          <AddTransactionForm addTransaction={addTransaction} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Topbar />
+          <main className="p-6 overflow-y-auto">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <Dashboard
+                    transactions={transactions}
+                    addTransaction={addTransaction}
+                    deleteTransaction={deleteTransaction}
+                    handleEdit={handleEdit}
+                    editingTx={editingTx}
+                    updateTransaction={updateTransaction}
+                    setEditingTx={setEditingTx}
+                  />
+                }
+              />
+              <Route path="/reports" element={<Reports transactions={transactions} />} />
+            </Routes>
+          </main>
         </div>
       </div>
-    </div>
+    </ThemeContext.Provider>
   );
 }
 

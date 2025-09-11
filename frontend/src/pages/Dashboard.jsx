@@ -6,7 +6,15 @@ import CategoryPieChart from "../components/CategoryPieChart";
 import TransactionTable from "../components/TransactionTable";
 import AddTransactionForm from "../components/AddTransactionForm";
 
-export default function Dashboard({ transactions, setTransactions }) {
+export default function Dashboard({
+  transactions,
+  addTransaction,
+  deleteTransaction,
+  handleEdit,
+  editingTx,
+  updateTransaction,
+  setEditingTx,
+}) {
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -19,7 +27,7 @@ export default function Dashboard({ transactions, setTransactions }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+      <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-700">
         Dashboard Overview
       </h2>
 
@@ -62,18 +70,22 @@ export default function Dashboard({ transactions, setTransactions }) {
       </div>
 
       {/* Add Transaction & Recent Transactions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div id="add-transaction" className="lg:col-span-1">
-          <AddTransactionForm
+      <div className="grid grid-cols-1 gap-6">
+        <div>
+          <TransactionTable
             transactions={transactions}
-            setTransactions={setTransactions}
+            deleteTransaction={deleteTransaction}
+            handleEdit={handleEdit}
+            showTitle={true}
           />
         </div>
-        <div className="lg:col-span-2">
-          <TransactionTable
-            transactions={transactions.slice(0, 5)} // Show recent 5
-            setTransactions={setTransactions}
-            showTitle={true}
+
+        <div id="add-transaction">
+          <AddTransactionForm
+            addTransaction={addTransaction}
+            editingTx={editingTx}
+            updateTransaction={updateTransaction}
+            setEditingTx={setEditingTx}
           />
         </div>
       </div>

@@ -131,7 +131,7 @@ export default function Reports({ transactions }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+      <h2 className="text-3xl font-bold text-gray-800 dark:text-white dark:text-gray-700">
         Financial Reports
       </h2>
 

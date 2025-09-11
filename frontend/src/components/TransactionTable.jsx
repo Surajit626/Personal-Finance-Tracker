@@ -1,53 +1,26 @@
+// src/components/TransactionTable.jsx
+
 import { useState } from "react";
 import { FaEdit, FaTrash, FaExclamationTriangle } from "react-icons/fa";
 import Modal from "./Modal";
-import Notification from "./Notification";
 
 export default function TransactionTable({
   transactions,
-  setTransactions,
+  deleteTransaction,
+  handleEdit, // This function correctly populates the main form for editing
   showTitle = false,
 }) {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedTx, setSelectedTx] = useState(null);
   const [txToDelete, setTxToDelete] = useState(null);
-  const [notification, setNotification] = useState(null);
 
-  const handleEdit = (tx) => {
-    setSelectedTx(tx);
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdate = (e) => {
-    e.preventDefault();
-    const updatedTx = {
-      ...selectedTx,
-      category: e.target.category.value,
-      amount: Number(e.target.amount.value),
-    };
-    const newTransactions = transactions.map((tx) =>
-      tx.id === updatedTx.id ? updatedTx : tx
-    );
-    setTransactions(newTransactions);
-    setIsEditModalOpen(false);
-    setNotification({ message: "Transaction updated!", type: "success" });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  // Step 1: When trash icon is clicked, open modal and set which transaction to delete
-  const promptDelete = (id) => {
-    setTxToDelete(id);
+  const promptDelete = (tx) => {
+    setTxToDelete(tx);
     setIsDeleteModalOpen(true);
   };
 
-  // Step 2: If user confirms, perform the deletion
   const confirmDelete = () => {
     if (txToDelete) {
-      const newTransactions = transactions.filter((tx) => tx.id !== txToDelete);
-      setTransactions(newTransactions);
-      setNotification({ message: "Transaction deleted!", type: "error" });
-      setTimeout(() => setNotification(null), 3000);
+      deleteTransaction(txToDelete._id);
     }
     setIsDeleteModalOpen(false);
     setTxToDelete(null);
@@ -80,10 +53,10 @@ export default function TransactionTable({
           <tbody>
             {transactions.map((tx) => (
               <tr
-                key={tx.id}
+                key={tx._id}
                 className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
               >
-                <td className="px-6 py-4">{tx.date}</td>
+                <td className="px-6 py-4">{new Date(tx.date).toLocaleDateString()}</td>
                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                   {tx.category}
                 </td>
@@ -96,6 +69,7 @@ export default function TransactionTable({
                   </span>
                 </td>
                 <td className="px-6 py-4 flex gap-3">
+                  {/* This button now correctly calls the handleEdit prop */}
                   <button
                     onClick={() => handleEdit(tx)}
                     className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400"
@@ -103,7 +77,7 @@ export default function TransactionTable({
                     <FaEdit />
                   </button>
                   <button
-                    onClick={() => promptDelete(tx.id)}
+                    onClick={() => promptDelete(tx)}
                     className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
                   >
                     <FaTrash />
@@ -115,34 +89,7 @@ export default function TransactionTable({
         </table>
       </div>
 
-      {/* Edit Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
-        <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Edit Transaction</h2>
-        {selectedTx && (
-          <form onSubmit={handleUpdate} className="space-y-4">
-            <input
-              type="text"
-              name="category"
-              defaultValue={selectedTx.category}
-              className="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            <input
-              type="number"
-              name="amount"
-              defaultValue={selectedTx.amount}
-              className="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-            <button
-              type="submit"
-              className="bg-indigo-600 text-white px-4 py-2.5 rounded-lg w-full hover:bg-indigo-700"
-            >
-              Save Changes
-            </button>
-          </form>
-        )}
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
+      {/* The Edit Modal has been removed. Only the Delete Modal remains. */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
         <div className="text-center">
             <FaExclamationTriangle className="mx-auto mb-4 h-12 w-12 text-red-500" />
@@ -168,14 +115,6 @@ export default function TransactionTable({
             </div>
         </div>
       </Modal>
-
-      {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
     </div>
   );
 }
